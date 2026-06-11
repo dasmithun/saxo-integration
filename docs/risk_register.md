@@ -1,10 +1,11 @@
 # Risk Register — Saxo Bank API Integration
 
-**Project:** Saxo Bank API Integration  
-**Owner:** Solo developer  
-**Last updated:** 2026-06-11  
+**Project:** Saxo Bank API Integration
+**Owner:** Solo developer
+**Last updated:** 2026-06-12
+**Project status:** All 6 phases complete
 
-Risk score = Probability (1–5) × Impact (1–5)  
+Risk score = Probability (1–5) × Impact (1–5)
 🟢 Low (1–5) · 🟡 Medium (6–10) · 🔴 High (11–25)
 
 ---
@@ -14,12 +15,12 @@ Risk score = Probability (1–5) × Impact (1–5)
 | Field | Detail |
 |---|---|
 | Category | API / Technical |
-| Probability | 4 |
-| Impact | 3 |
-| Score | 🟡 12 |
-| Description | The 24h SIM token from developer.saxo expires and breaks all test calls mid-session |
-| Mitigation | Set a calendar reminder 23h after getting each token. Keep the token page bookmarked: developer.saxo/openapi/token. Phase 2 (OAuth) eliminates this risk permanently |
-| Status | Active until Phase 2 complete |
+| Probability | 1 |
+| Impact | 2 |
+| Score | 🟢 2 |
+| Description | The 24h SIM token from developer.saxo expires and breaks API calls |
+| Mitigation | Resolved — OAuth 2.0 with auto-refresh is fully implemented. Tokens refresh automatically before expiry. Only re-login needed when refresh token expires (~1 hour of inactivity) |
+| Status | ✅ Resolved — Phase 2 complete |
 
 ---
 
@@ -28,12 +29,12 @@ Risk score = Probability (1–5) × Impact (1–5)
 | Field | Detail |
 |---|---|
 | Category | Security |
-| Probability | 2 |
+| Probability | 1 |
 | Impact | 5 |
-| Score | 🔴 10 |
-| Description | `.env` file accidentally staged and pushed, exposing API keys and secrets on GitHub |
-| Mitigation | `.env` is in `.gitignore`. Run `git status` before every commit — `.env` must never appear. If it ever does appear, rotate keys immediately in the Saxo app management portal |
-| Status | Mitigated — verify before every commit |
+| Score | 🟡 5 |
+| Description | `.env` or `tokens.json` accidentally staged and pushed, exposing API keys |
+| Mitigation | Both files are in `.gitignore` and confirmed never committed (verified via `git log -- .env` and `git log -- tokens.json`). Run `git status` before every commit. If credentials are ever exposed, rotate immediately at developer.saxo/openapi/appmanagement |
+| Status | ✅ Mitigated — verified clean |
 
 ---
 
@@ -43,39 +44,39 @@ Risk score = Probability (1–5) × Impact (1–5)
 |---|---|
 | Category | Availability |
 | Probability | 2 |
-| Impact | 3 |
-| Score | 🟢 6 |
-| Description | Saxo SIM is down during a planned dev session, blocking all API testing |
-| Mitigation | Check status at developer.saxo before long sessions. Saxo typically does maintenance Sunday nights UTC. Use this time for documentation, architecture, or offline code writing |
-| Status | Low risk — monitor |
+| Impact | 2 |
+| Score | 🟢 4 |
+| Description | Saxo SIM is unavailable during a dev session |
+| Mitigation | Project is complete — SIM downtime no longer blocks development. For future maintenance, Saxo typically schedules downtime Sunday nights UTC. Use yfinance for data work during downtime |
+| Status | 🟢 Low risk — project complete |
 
 ---
 
-## R04 — Rate limit hits (429 errors) during rapid testing
+## R04 — Rate limit hits (429 errors)
 
 | Field | Detail |
 |---|---|
 | Category | API / Technical |
-| Probability | 3 |
-| Impact | 2 |
-| Score | 🟢 6 |
-| Description | Rapid sequential API calls during testing trigger Saxo's 120 req/min rate limit |
-| Mitigation | SaxoClient already has exponential back-off on 429. Add `time.sleep(0.5)` between calls in test scripts that loop over multiple instruments |
-| Status | Mitigated in SaxoClient |
+| Probability | 2 |
+| Impact | 1 |
+| Score | 🟢 2 |
+| Description | Rapid API calls trigger Saxo's 120 req/min rate limit |
+| Mitigation | SaxoClient has exponential back-off on 429 (sleep 2^attempt seconds). Add `time.sleep(0.5)` in scripts that loop over many instruments |
+| Status | ✅ Mitigated in SaxoClient |
 
 ---
 
-## R05 — OAuth implementation complexity (Phase 2 blocker)
+## R05 — OAuth token scope insufficient (oal: 1F vs 3F)
 
 | Field | Detail |
 |---|---|
-| Category | Technical |
-| Probability | 3 |
-| Impact | 4 |
-| Score | 🟡 12 |
-| Description | OAuth 2.0 + PKCE is non-trivial to implement solo. Mistakes here block all of Phase 3 onwards |
-| Mitigation | Use Saxo's tutorial and the interactive portal to test each step before coding. Build the local callback server first, test the redirect manually, then automate. Don't rush this phase |
-| Status | Pending — Phase 2 |
+| Category | Security / Permissions |
+| Probability | 2 |
+| Impact | 3 |
+| Score | 🟢 6 |
+| Description | JWT tokens issued with `oal: 1F` (read-only) instead of `oal: 3F` (trading). Caused 403 on order placement during development |
+| Mitigation | Resolved by ensuring `OAPI.OP.Trading` is in the account Operations list and the app has Allow Trading enabled. Verified working — full order lifecycle (place, verify, cancel) tested and passing |
+| Status | ✅ Resolved — trading confirmed working |
 
 ---
 
@@ -84,12 +85,12 @@ Risk score = Probability (1–5) × Impact (1–5)
 | Field | Detail |
 |---|---|
 | Category | Data |
-| Probability | 3 |
-| Impact | 3 |
-| Score | 🟡 9 |
-| Description | Passing wrong or hardcoded keys causes 400/401 errors that are hard to debug |
-| Mitigation | Keys are stored in `.env` and loaded via `config.py`. Never hardcode keys in any Python file. If you see `400 Bad Request`, always check ClientKey and AccountKey first |
-| Status | Mitigated via config module |
+| Probability | 1 |
+| Impact | 2 |
+| Score | 🟢 2 |
+| Description | Incorrect keys cause 400/401 errors |
+| Mitigation | Keys loaded from `.env` via `config.py`. Never hardcoded. All integration tests verify correct keys are returned from the API |
+| Status | ✅ Mitigated — config module in place |
 
 ---
 
@@ -98,26 +99,26 @@ Risk score = Probability (1–5) × Impact (1–5)
 | Field | Detail |
 |---|---|
 | Category | API / Technical |
-| Probability | 4 |
-| Impact | 2 |
-| Score | 🟡 8 |
-| Description | `/chart/v1/charts` returns 404 with 24h token in SIM — confirmed in Phase 1 testing |
-| Mitigation | Deferred to Phase 3. Will retry with full OAuth token. If still unavailable, use alternative data source (e.g. Yahoo Finance via `yfinance`) for backtesting only |
-| Status | Known issue — deferred to Phase 3 |
+| Probability | 5 |
+| Impact | 1 |
+| Score | 🟡 5 |
+| Description | `/chart/v1/charts` returns 404 on SIM for all OAuth token types |
+| Mitigation | Resolved — `src/api/historical.py` uses yfinance as fallback. Supports EURUSD, Apple, SPY, NQ futures. Map is extensible. Saxo chart endpoint available on LIVE |
+| Status | ✅ Resolved — yfinance fallback working |
 
 ---
 
-## R08 — Scope creep (adding features mid-project)
+## R08 — WebSocket streaming unavailable on SIM
 
 | Field | Detail |
 |---|---|
-| Category | Scope |
-| Probability | 3 |
-| Impact | 3 |
-| Score | 🟡 9 |
-| Description | Temptation to add features (options, algo orders, UI) before core integration is stable |
-| Mitigation | Strictly follow the phase plan. Log new ideas in a `backlog.md` file — don't implement until Phase 3 core is complete and tested |
-| Status | Active — discipline required |
+| Category | API / Technical |
+| Probability | 5 |
+| Impact | 2 |
+| Score | 🟡 10 |
+| Description | Saxo's WebSocket endpoint (`/streamingws/connect`) returns 404 on SIM regardless of auth token or URL variant |
+| Mitigation | Resolved — `SaxoPoller` provides identical callback interface via REST polling. `test_streaming.py` auto-detects transport and falls back gracefully. WebSocket code is complete and will work on LIVE |
+| Status | ✅ Resolved — REST poller fallback working |
 
 ---
 
@@ -127,25 +128,25 @@ Risk score = Probability (1–5) × Impact (1–5)
 |---|---|
 | Category | API / Technical |
 | Probability | 2 |
-| Impact | 4 |
-| Score | 🟡 8 |
-| Description | Saxo deprecates or changes an endpoint version, breaking existing integration code |
-| Mitigation | Monitor the Saxo release notes page: developer.saxo/openapi/releasenotes. All API calls in `src/api/` use versioned paths (e.g. `/v1/`, `/v2/`) — changes are localised to one file |
-| Status | Low risk — monitor monthly |
+| Impact | 3 |
+| Score | 🟢 6 |
+| Description | Saxo deprecates or changes an endpoint version |
+| Mitigation | All API calls use versioned paths (`/v1/`, `/v2/`). Monitor developer.saxo/openapi/releasenotes monthly. Changes are localised to individual modules in `src/api/` |
+| Status | 🟡 Ongoing — monitor |
 
 ---
 
-## R10 — LIVE trading with SIM code (Phase 6)
+## R10 — Accidental LIVE order placement
 
 | Field | Detail |
 |---|---|
 | Category | Financial |
-| Probability | 2 |
+| Probability | 1 |
 | Impact | 5 |
-| Score | 🔴 10 |
-| Description | Accidentally pointing the client at LIVE environment while testing could trigger real orders |
-| Mitigation | `SaxoClient` defaults to `SIM_BASE` from config. LIVE URL is never set until Phase 6. Add an `ENVIRONMENT=SIM` variable to `.env` and assert it in the client constructor during development |
-| Status | Pending — enforce in Phase 6 switch |
+| Score | 🟡 5 |
+| Description | Code accidentally points at LIVE and places real orders with real money |
+| Mitigation | `SaxoClient.__init__` has `assert "sim" in base_url` that throws immediately if LIVE URL is passed. `OrdersAPI` defaults to `mock=True`. Both must be explicitly changed before any real order can be placed. Remove assert only when intentionally going LIVE after completing `go_live_checklist.md` |
+| Status | ✅ Mitigated — double safety locks in place |
 
 ---
 
@@ -153,13 +154,13 @@ Risk score = Probability (1–5) × Impact (1–5)
 
 | ID | Risk | Score | Status |
 |---|---|---|---|
-| R01 | 24h token expiry | 🟡 12 | Active |
-| R02 | Credentials in Git | 🔴 10 | Mitigated |
-| R03 | SIM downtime | 🟢 6 | Monitor |
-| R04 | Rate limit hits | 🟢 6 | Mitigated |
-| R05 | OAuth complexity | 🟡 12 | Pending Phase 2 |
-| R06 | Wrong API keys | 🟡 9 | Mitigated |
-| R07 | Chart data 404 | 🟡 8 | Deferred Phase 3 |
-| R08 | Scope creep | 🟡 9 | Active |
-| R09 | API breaking changes | 🟡 8 | Monitor |
-| R10 | LIVE env accident | 🔴 10 | Pending Phase 6 |
+| R01 | 24h token expiry | 🟢 2 | ✅ Resolved |
+| R02 | Credentials in Git | 🟡 5 | ✅ Mitigated |
+| R03 | SIM downtime | 🟢 4 | 🟢 Low risk |
+| R04 | Rate limit hits | 🟢 2 | ✅ Mitigated |
+| R05 | OAuth token scope | 🟢 6 | ✅ Resolved |
+| R06 | Wrong API keys | 🟢 2 | ✅ Mitigated |
+| R07 | Chart data 404 | 🟡 5 | ✅ Resolved |
+| R08 | WebSocket on SIM | 🟡 10 | ✅ Resolved |
+| R09 | API breaking changes | 🟢 6 | 🟡 Monitor |
+| R10 | Accidental LIVE orders | 🟡 5 | ✅ Mitigated |
