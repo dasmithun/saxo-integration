@@ -1,19 +1,19 @@
 from src.api.client import SaxoClient
 
 client = SaxoClient()
-user = client.get("/root/v1/user")
+user  = client.get("/root/v1/user")
+caps  = client.get("/root/v1/sessions/capabilities")
+ops   = user.get("Operations", [])
 
-can_trade    = user["AccessRights"]["CanTrade"]
-trade_level  = None
-
-# Also check session capabilities
-caps = client.get("/root/v1/sessions/capabilities")
-trade_level = caps.get("TradeLevel")
-
-print(f"CanTrade     : {can_trade}")
-print(f"TradeLevel   : {trade_level}")
-
-if can_trade:
-    print("\n✅ Trading enabled — set mock=False in OrdersAPI")
+print("=== Trading Permission Summary ===")
+print(f"CanTrade flag      : {user['AccessRights']['CanTrade']}")
+print(f"TradeLevel         : {caps.get('TradeLevel')}")
+print(f"OAPI.OP.Trading    : {'✅ Present' if 'OAPI.OP.Trading' in ops else '❌ Missing'}")
+print(f"TakeTradeSession   : {'✅' if 'OAPI.OP.TakeTradeSession' in ops else '❌'}")
+print(f"TakePriceSession   : {'✅' if 'OAPI.OP.TakePriceSession' in ops else '❌'}")
+print()
+if "OAPI.OP.Trading" in ops:
+    print("✅ You CAN place orders — OAPI.OP.Trading is present")
+    print("   CanTrade: False is a session flag, not a trading block")
 else:
-    print("\n⏳ Trading not yet enabled — orders will be rejected with 403")
+    print("❌ Trading not available — OAPI.OP.Trading missing from Operations")

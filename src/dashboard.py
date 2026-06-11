@@ -93,6 +93,30 @@ def run_dashboard(refresh=5):
             except Exception as e:
                 print(f"  ⚠ NQ data unavailable: {e}")
 
+            # AAPL P&L tracker
+            print(f"\n  {'STOCKS P&L'}")
+            print(f"  {'─'*50}")
+            try:
+                import yfinance as yf
+                import ssl
+                ssl._create_default_https_context = ssl._create_unverified_context
+                aapl = yf.download("AAPL", period="1d", interval="1m", progress=False)
+                if not aapl.empty:
+                    try:
+                        current = float(aapl['Close'].iloc[-1].iloc[0])
+                    except:
+                        current = float(aapl['Close'].iloc[-1])
+                    open_price = 296.14
+                    pnl        = (current - open_price) * 1
+                    ret        = ((current - open_price) / open_price) * 100
+                    emoji      = "🟢" if pnl > 0 else "🔴"
+                    print(f"  AAPL  Open: ${open_price:.2f}  "
+                        f"Current: ${current:.2f}  "
+                        f"P&L: ${pnl:+.2f}  "
+                        f"({ret:+.2f}%)  {emoji}")
+            except Exception as e:
+                print(f"  ⚠ AAPL data unavailable: {e}")
+
             # Open orders detail
             if orders["__count"] > 0:
                 print(f"\n  {'OPEN ORDERS'}")
