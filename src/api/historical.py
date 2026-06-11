@@ -7,9 +7,10 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 class HistoricalData:
     UIC_TO_YAHOO = {
-        21:    "EURUSD=X",
-        211:   "AAPL",
-        36590: "SPY",
+        21:       "EURUSD=X",
+        211:      "AAPL",
+        36590:    "SPY",
+        52477965: "NQ=F",   # E-mini NASDAQ-100
     }
 
     def get_bars(self, uic, period="5d", interval="1h"):

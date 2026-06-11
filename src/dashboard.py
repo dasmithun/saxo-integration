@@ -70,6 +70,29 @@ def run_dashboard(refresh=5):
             else:
                 print(f"  EURUSD         :  waiting for tick...")
 
+            # Futures P&L tracker
+            print(f"\n  {'FUTURES P&L'}")
+            print(f"  {'─'*50}")
+            try:
+                import yfinance as yf
+                import ssl
+                ssl._create_default_https_context = ssl._create_unverified_context
+                nq = yf.download("NQ=F", period="1d", interval="1m", progress=False)
+                if not nq.empty:
+                    try:
+                        current = float(nq['Close'].iloc[-1].iloc[0])
+                    except:
+                        current = float(nq['Close'].iloc[-1])
+                    open_price = 28888.0
+                    points     = current - open_price
+                    pnl_usd    = points * 20
+                    emoji      = "🟢" if pnl_usd > 0 else "🔴"
+                    print(f"  NQM6  Open: {open_price:>10,.2f}  "
+                        f"Current: {current:>10,.2f}  "
+                        f"P&L: ${pnl_usd:>+8,.2f}  {emoji}")
+            except Exception as e:
+                print(f"  ⚠ NQ data unavailable: {e}")
+
             # Open orders detail
             if orders["__count"] > 0:
                 print(f"\n  {'OPEN ORDERS'}")
@@ -82,9 +105,16 @@ def run_dashboard(refresh=5):
                 print(f"\n  {'OPEN POSITIONS'}")
                 print(f"  {'─'*50}")
                 for p in positions.get("Data", []):
-                    pnl = p.get("PositionBase", {}).get("UnrealizedPnl", 0)
-                    print(f"  {p.get('PositionId')}  PnL: {pnl:>10,.2f}")
-
+                    base     = p.get("PositionBase", {}) 
+                    view     = p.get("PositionView", {})
+                    pnl      = view.get("UnrealizedPnl", 0) or base.get("UnrealizedPnl", 0)
+                    amount   = base.get("Amount", "")
+                    direction = base.get("BuySell", "")
+                    asset    = base.get("AssetType", "")
+                    open_px  = base.get("OpenPrice", "")
+                    print(f"  {p.get('PositionId')}  {direction:<5}  {amount:<6}  "
+                        f"{asset:<20}  Open: {open_px:<10}  PnL: {pnl:>10,.2f}")
+        
             print(f"\n  {'─'*50}")
             print(f"  Refreshing every {refresh}s  |  Ctrl+C to exit")
             time.sleep(refresh)

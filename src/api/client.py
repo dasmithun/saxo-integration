@@ -48,6 +48,8 @@ class SaxoClient:
             json=payload,
             timeout=10
         )
+        if not r.ok:
+            print(f"Error response: {r.text}")
         r.raise_for_status()
         return r.json()
     
