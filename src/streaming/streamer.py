@@ -44,25 +44,36 @@ class SaxoStreamer:
         import ssl
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         ssl_context.check_hostname = False
-        ssl_context.verify_mode = ssl.CERT_NONE
+        ssl_context.verify_mode    = ssl.CERT_NONE
 
-        url = f"{SIM_STREAMING_URL}?contextid={self.context_id}"
-        headers = {"Authorization": f"Bearer {self.token}"}
-
+        url = f"{SIM_STREAMING_URL}?contextid={self.context_id}&Authorization={self.token}"
         print(f"Connecting to Saxo streaming...")
-        async with websockets.connect(url, ssl=ssl_context, additional_headers=headers) as ws:
-            self._ws = ws
-            self._running = True
-            print("✓ WebSocket connected")
-            async for raw in ws:
-                if isinstance(raw, bytes):
-                    messages = self._decode_message(raw)
-                    for msg in messages:
-                        ref_id = msg["ref_id"]
-                        if ref_id in self.callbacks:
-                            self.callbacks[ref_id](msg["data"])
-                        else:
-                            print(f"  [{ref_id}] {msg['data']}")
+        try:
+            async with websockets.connect(url, ssl=ssl_context) as ws:
+                self._ws      = ws
+                self._running = True
+                print("✓ WebSocket connected")
+                async for raw in ws:
+                    if isinstance(raw, bytes):
+                        messages = self._decode_message(raw)
+                        for msg in messages:
+                            ref_id = msg["ref_id"]
+                            if ref_id in self.callbacks:
+                                self.callbacks[ref_id](msg["data"])
+                            else:
+                                print(f"  [{ref_id}] {msg['data']}")
+        except websockets.exceptions.InvalidStatus as e:
+            status = e.response.status_code
+            body   = bytes(e.response.body)
+            if status == 404:
+                print(f"⚠ WebSocket endpoint not available on SIM (404)")
+                print(f"  This is a known Saxo SIM limitation.")
+                print(f"  WebSocket streaming is only available on LIVE.")
+                print(f"  Use SaxoPoller for SIM development instead.")
+            else:
+                print(f"✗ Connection rejected: {status} → {body[:100]}")
+        except Exception as e:
+            print(f"✗ {type(e).__name__}: {e}")
 
     def _run_loop(self):
         self._loop = asyncio.new_event_loop()
@@ -94,8 +105,11 @@ class SaxoStreamer:
             }
         )
         if r.status_code in (200, 201):
-            print(f"✓ Subscribed to {asset_type} UIC={uic} → ref_id={ref_id}")
-            return r.json()
+            data = r.json()
+            print(f"✓ Subscribed — full response:")
+            import json
+            print(json.dumps(data, indent=2))
+            return data
         else:
             print(f"⚠ Subscription failed: {r.status_code} {r.text[:200]}")
             return None
