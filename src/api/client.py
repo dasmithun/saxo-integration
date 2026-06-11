@@ -4,6 +4,7 @@ from src.utils.config import SIM_BASE, TOKEN
 
 class SaxoClient:
     def __init__(self, base_url=SIM_BASE, token=TOKEN):
+        assert "sim" in base_url, "Safety check: switch to LIVE only in Phase 6"
         self.base = base_url
         self.session = requests.Session()
         self.session.headers.update({
