@@ -1,15 +1,24 @@
 import time
+import truststore
+truststore.inject_into_ssl()
+
 import requests
-from src.utils.config import SIM_BASE, TOKEN
+from src.utils.config import SIM_BASE
 
 class SaxoClient:
-    def __init__(self, base_url=SIM_BASE, token=TOKEN):
+    def __init__(self, base_url=SIM_BASE, token=None):
         assert "sim" in base_url, "Safety check: switch to LIVE only in Phase 6"
         self.base = base_url
+
+        # Use OAuth token if none provided
+        if token is None:
+            from src.auth.token_manager import get_valid_token
+            token = get_valid_token()
+
         self.session = requests.Session()
         self.session.headers.update({
             "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json"
+            "Content-Type":  "application/json"
         })
 
     def get(self, path, params=None, retries=3):
@@ -25,7 +34,7 @@ class SaxoClient:
                     time.sleep(2 ** attempt)
                     continue
                 if r.status_code == 401:
-                    raise Exception("Token expired — get a new 24h token from developer.saxo")
+                    raise Exception("Token expired — run python -m src.auth.oauth to re-login")
                 r.raise_for_status()
                 return r.json()
             except requests.Timeout:
