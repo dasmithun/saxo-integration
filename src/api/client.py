@@ -60,3 +60,14 @@ class SaxoClient:
         )
         r.raise_for_status()
         return r.json() if r.text else {"status": "deleted"}
+    
+    def put(self, path, payload=None):
+        r = self.session.put(
+            f"{self.base}{path}",
+            json=payload,
+            timeout=10
+        )
+        if not r.ok:
+            print(f"Error response: {r.text}")
+        r.raise_for_status()
+        return r.json() if r.text else {"status": "ok"}
