@@ -53,11 +53,14 @@ class SaxoClient:
         r.raise_for_status()
         return r.json()
     
-    def delete(self, path):
+    def delete(self, path, params=None):
         r = self.session.delete(
             f"{self.base}{path}",
+            params=params,
             timeout=10
         )
+        if not r.ok:
+            print(f"Error response: {r.text}")
         r.raise_for_status()
         return r.json() if r.text else {"status": "deleted"}
     

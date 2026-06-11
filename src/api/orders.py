@@ -6,18 +6,26 @@ class OrdersAPI:
         self.client = client
         self.mock   = mock
 
-    def place_order(self, uic, asset_type, direction, amount, order_type="Market", price=None):
+    def place_order(self, uic, asset_type, direction, amount,
+                    order_type="Market", price=None,
+                    duration="DayOrder"):
+
         payload = {
-            "Uic":          uic,
-            "AssetType":    asset_type,
-            "BuySell":      direction,
-            "Amount":       amount,
-            "OrderType":    order_type,
-            "ManualOrder":  True,
-            "AccountKey":   ACCOUNT_KEY,
+            "Uic":           uic,
+            "AssetType":     asset_type,
+            "BuySell":       direction,
+            "Amount":        amount,
+            "OrderType":     order_type,
+            "OrderRelation": "StandAlone",
+            "ManualOrder":   True,
+            "AccountKey":    ACCOUNT_KEY,
+            "OrderDuration": {"DurationType": duration}
         }
+
         if order_type == "Limit" and price:
-            payload["Price"] = price
+            payload["OrderPrice"] = price
+
+        if order_type == "Market":
             payload["OrderDuration"] = {"DurationType": "DayOrder"}
 
         if self.mock:
@@ -33,7 +41,10 @@ class OrdersAPI:
             print(f"[MOCK] Would cancel order: {order_id}")
             return {"status": "simulated"}
 
-        return self.client.delete(f"/trade/v2/orders/{order_id}/{ACCOUNT_KEY}")
+        return self.client.delete(
+            f"/trade/v2/orders/{order_id}",
+            params={"AccountKey": ACCOUNT_KEY}
+        )
 
     def get_open_orders(self):
         return self.client.get("/port/v1/orders", params={
