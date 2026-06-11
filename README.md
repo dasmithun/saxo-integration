@@ -397,13 +397,58 @@ Both are loaded from `.env` via `config.py`.
 
 ## Known SIM limitations
 
-| Feature | Status |
+## Limitations
+
+### Saxo SIM environment
+These resolve automatically when switching to LIVE.
+
+| Limitation | Detail | Workaround |
+|---|---|---|
+| WebSocket streaming | `/streamingws/connect` returns 404 on SIM | REST poller — working |
+| Historical chart data | `/chart/v1/charts` returns 404 on SIM | yfinance fallback — working |
+| US stock prices | AAPL, SPY return `NoAccess` without data subscription | yfinance for P&L tracking |
+| CME futures prices | NQ returns `NoAccess` without data subscription | yfinance for P&L tracking |
+| `CanTrade` flag | Shows `False` despite trading working — misleading session flag | Ignore — `OAPI.OP.Trading` in Operations is what matters |
+| Token lifetime | Access token 20 min, refresh token 1 hour | Re-run `python -m src.auth.oauth` after idle |
+
+---
+
+### Corporate network
+These resolve by running from a personal network or VPS.
+
+| Limitation | Detail | Workaround |
+|---|---|---|
+| WebSocket blocked | Corporate firewall blocks WSS | REST poller fallback |
+| SSL interception | Corporate proxy intercepts HTTPS | `truststore` + `ssl._create_unverified_context` for yfinance |
+| SaxoTraderGO unreachable | Platform UI not accessible on corporate network | Use personal network |
+
+---
+
+### Code — current gaps
+
+| Limitation | Detail | Priority |
+|---|---|---|
+| Hardcoded open prices | NQ and AAPL open prices hardcoded in `dashboard.py` — update manually per position | 🟡 Medium |
+| No persistent position tracking | Dashboard doesn't remember open prices across restarts | 🟡 Medium |
+| No stop loss / take profit | Order exits are manual — no automated exit logic | 🟡 Medium |
+| Token keepalive | Refresh token expires after 1 hour idle — no background keepalive | 🟡 Medium |
+| Single account only | ClientKey/AccountKey hardcoded in `.env` — no multi-account support | 🟢 Low |
+| yfinance UIC mapping is manual | `UIC_TO_YAHOO` in `historical.py` must be extended manually per instrument | 🟢 Low |
+| No logging | Errors printed to terminal only — no log files or alerting | 🟢 Low |
+| `mock=True` by default | `OrdersAPI` defaults to mock — must pass `mock=False` explicitly for real orders | 🟢 Low |
+
+---
+
+### Go-live blockers
+Must be resolved before switching to LIVE.
+
+| Blocker | Action |
 |---|---|
-| WebSocket streaming | 404 on SIM — works on LIVE. SaxoPoller used as fallback |
-| Chart / historical data | 404 on SIM — yfinance used as fallback |
-| US stock prices | NoAccess — requires market data subscription |
-| CME futures prices | NoAccess — requires market data subscription |
-| FX prices | Working — included by default |
+| LIVE credentials not obtained | Create LIVE app at developer.saxo → obtain new App Key and Secret |
+| WebSocket untested on LIVE | Test `python -m tests.test_streaming` from home network before go-live |
+| Chart endpoint untested on LIVE | Verify `/chart/v1/charts` works after switching URLs |
+| Safety assert must be removed | Delete `assert "sim" in base_url` from `SaxoClient.__init__` |
+| No production monitoring | Set up logging, alerting, and uptime monitoring before LIVE |
 
 ---
 
